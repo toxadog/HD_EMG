@@ -1,3 +1,8 @@
 test_2
 test_ligne
+<<<<<<< HEAD
 ligne mathieu
+=======
+begin_ant
+ligne4_ant
+>>>>>>> Anton
