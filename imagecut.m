@@ -16,9 +16,9 @@ for i=1:size(I,1)
     for j=1:size(I,2)
         d=abs(-K(1)*j+i*1-K(2))/sqrt(K(1)^2+1^2);
         if j*K(1)+K(2)>=i
-            Iu(i,j)=I(i,j)*h(fix(d)+1)+backgr;
+            Iu(i,j)=(I(i,j)-backgr)*h(fix(d)+1)+backgr;
         else
-            Id(i,j)=I(i,j)*h(fix(d)+1)+backgr;
+            Id(i,j)=(I(i,j)-backgr)*h(fix(d)+1)+backgr;
         end
     end
 end
