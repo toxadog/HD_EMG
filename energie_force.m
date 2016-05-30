@@ -9,45 +9,36 @@ for S=1:10
 %             f=50;
 %             t=2;
             longueur_ech_active=50000;
-            
-%%            
-            %Lecture fichier
+%% Lecture fichier 
             fid=fopen(strcat('C:\Users\Mathieu\Desktop\Stage\Edm_filtre\filtre_s',num2str(S),'_e2_f',num2str(f),'_t',num2str(t),'_SplitNum_1.sig'),'r');
             data = fread(fid,[68 inf],'int32','b');
-%%
-            %Paramètres
+%% Paramètres
             L_data = length(data);
             sampling_period = 409.6E-6;
             fs = 2441.4;
             v_temps=(0 : sampling_period : (L_data-1)*sampling_period)';
-
-            %Données de travail
+%% Données de travail
             mat_Force = data (65:68,:)';
             Force_index = mat_Force(:,1);
             Force_edm = mat_Force(:,4);
             Force=Force_edm;
             Emg = data (1:64,:)';
 
-%%
-            %Détection du mouvement
-            % Force = Force - mat_Force(:,3);
+%% Détection du mouvement
+            % Force = Force - mat_Force(:,3); %suppression des valeurs de forces dûes à la recalibration
             seuil = mean(abs(Force));
             Test = abs(Force)> seuil;
-            for i=1:L_data; %suppression des valeurs de forces dûes à la recalibration
+            for i=1:L_data; 
                 if Test (i) ==1
                     if Test(i-50) ~=1 && Test(i+50) ~=1 
                         Test (i)=0;
                     end
                 end
             end
-%             essai = find(Test,longueur_ech_active,'first')
-%             Emg_active = Emg(essai(1):essai(longueur_ech_active),:);
              Emg_active = Emg;
              Emg_active(Test==0,:)=[];
-             Emg_active (longueur_ech_active+1:end,:)=[];
-     
-%%
-            %Detection pixel defectueux
+             Emg_active (longueur_ech_active+1:end,:)=[];     
+%% Detection pixel defectueux
             Emg_non_active = Emg;
             Emg_non_active(Test==1,:)=[];
             
@@ -71,8 +62,7 @@ for S=1:10
                     m_noise (i,:)= fliplr(noise_en(64-8*i+1 : 64-8*(i-1)));
                 end
             end
-%%
-           % Création matrice 3D
+%% Création matrice 3D
            for i=1:8
                 if mod(i,2 )==0
                    Emg_3d(i,:,:)= Emg_active(:,64-8*i+1 : 64-8*(i-1))';
@@ -80,10 +70,8 @@ for S=1:10
                     Emg_3d (i,:,:)= fliplr(Emg_active(:,64-8*i+1 : 64-8*(i-1)))';
                 end
            end
-%%
-            %Correction pixel defectueux
-%           Correction capteur défectueux
-            Emg_3d(3,2,:) = 0.25 * (Emg_3d(4,2,:)+Emg_3d(2,2,:) + Emg_3d(3,1,:)+Emg_3d(3,3,:)); 
+%% Correction pixel defectueux
+            Emg_3d(3,2,:) = 0.25 * (Emg_3d(4,2,:)+Emg_3d(2,2,:) + Emg_3d(3,1,:)+Emg_3d(3,3,:)); % Déjà connu
             for i=1:8
                 for j=1:8
                     if m_noise(i,j)==1 
@@ -109,8 +97,7 @@ for S=1:10
                     end
                 end
             end
-%%
-            % Creation test 
+%% Creation matrice energie 
             for i=1:8
                 for j=1:8
                     matrice_energie (i,j)= rms (Emg_3d (i,j,:)); 
@@ -128,9 +115,7 @@ for S=1:10
             end
             if (f == 70)
                 m_rms(3) = m_rms(3) + mean(mean(matrice_energie));
-        
             end
-            
         end
     end
 end
@@ -138,4 +123,3 @@ end
 m_p(1) = m_rms(1)*0.7/m_rms(3);
 m_p(2) = m_rms(2)*0.7/m_rms(3);
 m_p(3) =0.7;
-

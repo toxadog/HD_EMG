@@ -8,7 +8,6 @@ ZP_Emg_propa_centre = real(ifft(ifftshift([zeros(20000,3);TF_Emg_propa_centre;ze
 X = 0:1/fs:(length(Emg_propa_centre_1)-1)/fs;
 Y = 0:1/(fs*2):(length(ZP_Emg_propa_centre)-1)/(fs*2);
 Emg_propa_centre = ZP_Emg_propa_centre';
-
 %% inter-correlation + mesure retard
 clear dist_time
 dist_time_2 = zeros(2,length(q_ok));
@@ -62,11 +61,7 @@ for j = 2:length(q_ok)
      dist_time_2(1,j-1) = sqrt((q_ok(1,j-1)-q_ok(1,j))^2+(q_ok(2,j-1)-q_ok(2,j))^2);
      dist_time_3(1,j-1) = sqrt((q_ok(1,j-1)-q_ok(1,j))^2+(q_ok(2,j-1)-q_ok(2,j))^2);
 end
-
-
-
-
-%% pour memoire
+%% pour memoire filtre LPD
 % for i = 41:30000
 % for j = 0:40
 % Emg_tt(i)=sin(j*pi/40)*(Emg_propa(1,i+j)-Emg_propa(1,i-j));

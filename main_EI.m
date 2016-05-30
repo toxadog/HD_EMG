@@ -2,7 +2,6 @@
 % cas defectueux dans un coin : voir energie_force.m
 % verif dans calcul seuil : i > 50
 % filtrage
-% watershed
 %% 
 clear all
 close all
@@ -20,38 +19,34 @@ close all
 %             a_c = [1 14];
 %             b_c = [32 24];
 %% si deja decoupé -> lecture
-% fw=fopen(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE_DECOUPE\DECOUPE_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t),'.txt'),'r');
-% data = fread(fw,[2 inf],'int32','b');
-% a_c = data(1,:);
-% b_c = data(2,:);
-% fclose (fw);
+%             fw=fopen(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE_DECOUPE\DECOUPE_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t),'.txt'),'r');
+%             data = fread(fw,[2 inf],'int32','b');
+%             a_c = data(1,:);
+%             b_c = data(2,:);
+%             fclose (fw);
 %% Si découpe OK -> ecriture
 %             fw=fopen(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE_DECOUPE\DECOUPE_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t),'.txt'),'w');
 %             fwrite(fw,[a_c; b_c],'int32','b');
 %             fclose (fw);
-%%            
-            %Lecture fichier
+%% Lecture fichier     
             fid=fopen(strcat('C:\Users\Mathieu\Desktop\Stage\EI\EI_filtre\filtre_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t),'_SplitNum_1.sig'),'r');
             data = fread(fid,[68 inf],'int32','b');
-%%
-            %Paramètres
+%% Paramètres
             L_data = length(data);
             sampling_period = 409.6E-6;
             fs = 2441.4;
             v_temps=(0 : sampling_period : (L_data-1)*sampling_period)';
-            
-            %Données de travail
+%% Données de travail     
             mat_Force = data (65:68,:)';
             Force_index = mat_Force(:,1);
             Force_edm = mat_Force(:,4);
             Force=Force_index;
             Emg = data (1:64,:)';
-%%
-            %Détection du mouvement
-            % Force = Force - mat_Force(:,3);
+%% Détection du mouvement
+            % Force = Force - mat_Force(:,3); %suppression des valeurs de forces dûes à la recalibration
             seuil = mean(abs(Force));
             Test = abs(Force)> seuil;
-            for i=1:L_data; %suppression des valeurs de forces dûes à la recalibration
+            for i=1:L_data; 
                 if Test (i) ==1
                     if Test(i-50) ~=1 && Test(i+50) ~=1 
                         Test (i)=0;
@@ -61,8 +56,7 @@ close all
              Emg_active = Emg;
              Emg_active(Test==0,:)=[];
              Emg_active (longueur_ech_active+1:end,:)=[];
-%%
-            % Représentation force et seuil
+%% Représentation force et seuil
 %             figure (1)
 %             subplot (3,1,1)
 %             title('seuillage de la force')
@@ -77,8 +71,7 @@ close all
 %             subplot (3,1,3)
 %             title('Emg actives')
 %             plot(Emg_active(:,10:11));          
-%%
-            %Detection pixel defectueux
+%% Detection pixel defectueux
             Emg_non_active = Emg;
             Emg_non_active(Test==1,:)=[];
             
@@ -102,9 +95,7 @@ close all
                     m_noise (i,:)= fliplr(noise_en(64-8*i+1 : 64-8*(i-1)));
                 end
             end
-            
-%%
-%          Création matrice 3D
+%% Création matrice 3D  
            for i=1:8
                 if mod(i,2 )==0
                    Emg_3d(i,:,:)= Emg_active(:,64-8*i+1 : 64-8*(i-1))';
@@ -113,9 +104,7 @@ close all
                 end
            end
 %% Correction pixel defectueux
-            
-%           Correction capteur défectueux
-            Emg_3d(3,2,:) = 0.25 * (Emg_3d(4,2,:)+Emg_3d(2,2,:) + Emg_3d(3,1,:)+Emg_3d(3,3,:)); 
+            Emg_3d(3,2,:) = 0.25 * (Emg_3d(4,2,:)+Emg_3d(2,2,:) + Emg_3d(3,1,:)+Emg_3d(3,3,:)); % Déjà connu
             for i=1:8
                 for j=1:8
                     if m_noise(i,j)==1 
@@ -142,67 +131,33 @@ close all
 %             figure;
 %             imagesc(matrice_energie)
 %             print(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE\Energie_8_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t)),'-djpeg','-r0')
-%% sert plus
-% %             % Creation matrice energie 
-% %             v_energie = rms(Emg_active);
-% %             v_energie(47)=v_energie(46);
-% %             for i=1:8
-% %                 if mod(i,2 )==0
-% %                     matrice_energie (i,:)= v_energie(64-8*i+1 : 64-8*(i-1));
-% %                 else
-% %                     matrice_energie (i,:)= fliplr(v_energie(64-8*i+1 : 64-8*(i-1)));
-% %                 end
-% %             end
-% %             figure (3)
-% %             imagesc(matrice_energie)
-% %             title('energie')
-
-            
-%%
-            % extrapolation par zero-padding
-%             TF_8 =  fftshift(fft2(matrice_energie));
-%             TF_8(9,2:9)=fliplr(conj(TF_8(1,1:8)));
-%             TF_8(2:9,9)=flipud(conj(TF_8(1:8,1)));
-%             TF_32 = ifftshift(padarray(TF_8,[12,12]));
-%             matrice_energie_32=ifft2 (TF_32);
-%             figure (3)
-%             imagesc(matrice_energie_32)
-%             title ('extrapolation par zero-padding')
-%             % extrapolation par bilinéaire
-% %             figure (4)
+%% extrapolation par bilinéaire
               matrice_energie_32 = imresize(matrice_energie,4,'bilinear');
-%               figure;
-%               imagesc(matrice_energie_32);
-%               print(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE\Sans_Correction_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t)),'-djpeg','-r0')
-% %             imagesc(matrice_energie_32)
-% %             title ('extrapolation bilinéaire')
-
-%% POUR EI
-% [matrice_energie_32_bis, matrice_energie_32_ter] = imagecut (matrice_energie_32, a_c, b_c);
-% figure;
-% imagesc(matrice_energie_32_bis);
-% figure;
-% imagesc(matrice_energie_32_ter);
-% figure;
-% imagesc(matrice_energie_32);
+%             figure;
+%             imagesc(matrice_energie_32);
+%             print(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE\Sans_Correction_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t)),'-djpeg','-r0')
+%             imagesc(matrice_energie_32)
+%             title ('extrapolation bilinéaire')
+%% AFFICHAGE DECOUPE
+%             [matrice_energie_32_bis, matrice_energie_32_ter] = imagecut (matrice_energie_32, a_c, b_c);
+%             figure;
+%             imagesc(matrice_energie_32_bis);
+%             figure;
+%             imagesc(matrice_energie_32_ter);
+%             figure;
+%             imagesc(matrice_energie_32);
 %% test pour EI EQUALIZATION HIST
-matrice_energie_32 = histeq(mat2gray(matrice_energie_32));
-%%
-%             test reconnaissance direction
+            matrice_energie_32 = histeq(mat2gray(matrice_energie_32));
+%% Repérage muscle
+%             Seuillage et segmentation             
               [long large]= size(matrice_energie_32);
               seuil = quantile(reshape(matrice_energie_32,1,long*large), 0.75);
               logical = matrice_energie_32>seuil;
-
-%               logical = 1-logical; % POUR EDM avec logical = matrice_energie_32<seuil
-%               possible 
-%               se = ones(3,3);
-%               logical = imopen(logical,se);
-%               logical = imclose(logical,se);
-
               s = regionprops(logical, 'Orientation', 'MajorAxisLength','MinorAxisLength', 'Eccentricity','Centroid');
               phi = linspace(0,2*pi,50);
               cosphi = cos(phi);
               sinphi = sin(phi);
+%             Affichage direction
     for reg=1:length(s)
         clear xbar ybar a b theta R xy x y q
               xbar = s(reg).Centroid(1);
@@ -228,14 +183,11 @@ matrice_energie_32 = histeq(mat2gray(matrice_energie_32));
               plot(q(1,:),q(2,:),'r','LineWidth',2);
 %                  print(strcat('C:\Users\Mathieu\Desktop\Stage\EI\ENERGIE_DECOUPE\Direction_opt_s',num2str(S),'_e1_f',num2str(f),'_t',num2str(t),'_m',num2str(reg)),'-djpeg','-r0')
     end
-
 %%  Interpolation signaux
-%     
 %       for i=1:length(Emg_active)
 %           Emg_3d_32(:,:,i)=imresize(Emg_3d (:,:,i),4,'bilinear');
 %       end
-%% 
-% %       Matrice propagation
+%% Matrice propagation    
 %         q_ok=q;
 %         [row col]=find(q>32); %ajout un peu sale (il arrive que notre droite de propa sorte de l'image)
 %         q_ok(row,col) = floor(q_ok(row,col));
@@ -255,9 +207,7 @@ matrice_energie_32 = histeq(mat2gray(matrice_energie_32));
 %             drawnow
 %         end
 %         title('Emg direction muscle')
-  %% 
-% %       Matrice propagation Emg_diff
-%         
+%% Matrice propagation Emg_diff (A faire à partir de Imdiff
 %         for i=1:length(q_ok)-1
 %             Emg_propa_diff(i,:)=Emg_propa(i,:)-Emg_propa(i+1,:);
 %         end
@@ -269,8 +219,7 @@ matrice_energie_32 = histeq(mat2gray(matrice_energie_32));
 %             drawnow
 %         end    
 %         title('Emg diff direction muscle')
-%% 
-% %      Affichage pixel considérés
+%% Affichage pixel considérés 
 %        matrice_energie_test=matrice_energie_32;
 %        for i=1:length(q_ok)
 %            matrice_energie_test(int8(q_ok(2,i)),int8(q_ok(1,i)))=0;
@@ -278,34 +227,10 @@ matrice_energie_32 = histeq(mat2gray(matrice_energie_32));
 %        figure (12)
 %        imagesc(matrice_energie_test);
 % %        print(strcat('pixel_s',num2str(S),'_e2_f',num2str(f),'_t',num2str(t)),'-djpeg','-r0')
-%%
+%% END
           fclose(fid)
 %           close all
 %             end
 %         end
 %     end
 % end
- %% test watershed : marche pas bien
-% I = mat2gray(matrice_energie_32);
-% I = histeq(I);
-% hy = fspecial('sobel');
-% hx = hy';
-% Ix = imfilter(I,hy,'replicate');
-% Ix = imfilter(I,hx,'replicate');
-% Iy = imfilter(I,hy,'replicate');
-% g = sqrt(Ix.^2+Iy.^2);
-% se = ones(3,3);
-% Io = imopen(g,se);
-% Ic = imclose(Io,se);
-% 
-% test = watershed(Ic);
-% figure
-% imagesc(test)
-%% test h-dome : donne les mêmes résultats que moi
-% marker = I - quantile(reshape(I,1,32*32), 0.10);
-% reconstr = imreconstruct(marker,I);
-% test2 = I-reconstr;
-% thresh = graythresh(test2);
-% test2 = test2 >thresh;
-% figure
-% imagesc(test2)
